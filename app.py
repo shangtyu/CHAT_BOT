@@ -3,6 +3,7 @@ from flask_cors import CORS
 from openai import OpenAI
 import os
 import random
+import re
 from dotenv import load_dotenv
 
 # 加载环境变量
@@ -29,16 +30,61 @@ def index():
 
 @app.route("/predict_price", methods=["POST"])
 def predict_price():
-    """简单的价格预测功能"""
+    """使用DeepSeek AI进行价格预测"""
     data = request.get_json()
     product = data.get("product", "")
     
-    # 这里可以添加实际的价格预测逻辑
-    # 现在使用随机价格作为演示
-    base_price = random.uniform(10, 200)
-    predicted_price = round(base_price, 2)
+    if not product:
+        return jsonify({"error": "Product description is required"}), 400
     
-    return jsonify({"price": predicted_price})
+    # 使用DeepSeek API进行价格预测
+    prompt = f"""作为一个专业的二手商品价格评估专家，请根据以下商品描述预测其二手市场价格（人民币）。
+
+商品描述: {product}
+
+请考虑以下因素：
+1. 商品的品牌和型号
+2. 使用年限和磨损程度
+3. 当前市场供需情况
+4. 同类产品的价格范围
+5. 商品的稀有程度和保值性
+
+请只返回一个具体的价格数字（单位：元），不要包含其他文字说明。
+例如：150.00"""
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.3
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # 尝试从回复中提取价格数字
+        price_match = re.search(r'(\d+\.?\d*)', result)
+        if price_match:
+            predicted_price = float(price_match.group(1))
+        else:
+            # 如果无法解析，使用随机价格作为后备
+            predicted_price = round(random.uniform(10, 200), 2)
+        
+        return jsonify({
+            "price": predicted_price,
+            "ai_response": result,
+            "source": "deepseek-ai"
+        })
+        
+    except Exception as e:
+        print(f"DeepSeek API error: {str(e)}")
+        # 如果API调用失败，使用随机价格作为后备
+        fallback_price = round(random.uniform(10, 200), 2)
+        return jsonify({
+            "price": fallback_price,
+            "error": f"AI prediction failed: {str(e)}",
+            "source": "fallback"
+        })
 
 @app.route("/deepseek", methods=["POST"])
 def deepseek_analysis():
@@ -81,4 +127,4 @@ def health_check():
     return jsonify({"status": "healthy", "service": "price-prediction-bot"})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
