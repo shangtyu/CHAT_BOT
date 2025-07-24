@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <title>second-hand goods price prediction</title>
+    <style>
+        body { font-family: Arial; background: #f2f2f2; padding-top: 40px; display: flex; flex-direction: column; align-items: center; }
+        .logo { width: 140px; height: 140px; background: #f2f2f2; color: white; font-size: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .chatbox { width: 420px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .output { background: #f1f1f1; padding: 10px; min-height: 60px; border-radius: 6px; white-space: pre-wrap; }
+        textarea { width: 100%; margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 16px; resize: none; }
+        .buttons { margin-top: 10px; display: flex; justify-content: space-between; }
+        button { flex: 1; padding: 10px; background-color: #491a5b; color: white; border: none; font-size: 16px; border-radius: 6px; margin: 0 5px; cursor: pointer; }
+        button:hover { background-color: #491661; }
+    </style>
+</head>
+<body>
+
+<div class="logo">
+  <img src="/static/logo.png" alt="PriceBot Logo">
+</div>
+<div class="chatbox">
+    <div id="output" class="output">Welcome to use price prediction system. Please tell us about your goods!</div>
+    <textarea id="userInput" placeholder="..."></textarea>
+    <div class="buttons">
+        <button onclick="submitInput()">submit</button>
+        <button onclick="reset()">reset</button>
+    </div>
+</div>
+
+<script>
+    let currentNode = 0;
+    let productInfo = "";
+    let lastPrice = 5.2;
+
+    const output = document.getElementById("output");
+    const input = document.getElementById("userInput");
+
+    function submitInput() {
+        const userText = input.value.trim();
+        if (!userText) {
+            alert("tell us about your goods!");
+            return;
+        }
+        input.value = "";
+
+        if (currentNode === 0) {
+            productInfo = userText;
+            currentNode = 1;
+            output.innerText = "[system] price predicting...";
+            setTimeout(() => {
+                currentNode = 2;
+                output.innerText = `[system] predicted price: ${lastPrice}RMB\n[system] Satisfied or not？(Yes/No)`;
+            }, 1500);
+                console.info("yeah")
+        } else if (currentNode === 2) {
+            if (userText === "No") {
+                currentNode = 1;
+                output.innerText = "[system] predicting again...";
+                setTimeout(() => {
+                    currentNode = 2;
+                    output.innerText = `[system] predicted price: ${lastPrice}RMB\n[system]Satisfied or not ？(Yes/No)`;
+                }, 1500);
+            } else if (userText === "Yes") {
+                currentNode = 3;
+                output.innerText = "[system] Do you need more details about the market？(Yes/No)";
+            } else {
+                output.innerText = "[system] Please tell us if you are satisfied";
+            }
+        } else if (currentNode === 3) {
+            if (userText === "Yes") {
+                output.innerText = "[system] Market analysis is being obtained...";
+                fetch("/deepseek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ product: productInfo })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    currentNode = 4;
+                    output.innerHTML = `<strong>[system] Market analysis:</strong><br>` + 
+                   marked.parse(data.market_analysis) + 
+                   `<br><strong>[system] thank you!</strong>`;
+
+                })
+                .catch(err => {
+                    output.innerText = `[system] obtaining failed:${err}`;
+                });
+            } else if (userText === "No") {
+                currentNode = 4;
+                output.innerText = "[system] thanks";
+            } else {
+                output.innerText = "[system] Whether you need or not";
+            }
+        } else if (currentNode === 4) {
+            output.innerText = "[system] The conversation has ended,IF you need to star over,please click'Reset";
+        }
+    }
+
+    function reset() {
+        currentNode = 0;
+        productInfo = "";
+        output.innerText = "Welcome to use price prediction.";
+        input.value = "";
+    }
+</script>
+</body>
+</html>
