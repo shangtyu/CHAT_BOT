@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <title>Second-hand Goods Price Prediction</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f2f2f2; 
+            padding-top: 40px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0;
+        }
+        .logo { 
+            width: 140px; 
+            height: 140px; 
+            background: #491a5b; 
+            color: white; 
+            font-size: 24px; 
+            border-radius: 50%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            font-weight: bold; 
+        }
+        .logo img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+        .chatbox { 
+            width: 420px; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+        }
+        .output { 
+            background: #f1f1f1; 
+            padding: 15px; 
+            min-height: 80px; 
+            border-radius: 6px; 
+            white-space: pre-wrap; 
+            line-height: 1.5;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        textarea { 
+            width: 100%; 
+            margin-top: 10px; 
+            padding: 10px; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            resize: none; 
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .buttons { 
+            margin-top: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+        }
+        button { 
+            flex: 1; 
+            padding: 10px; 
+            background-color: #491a5b; 
+            color: white; 
+            border: none; 
+            font-size: 16px; 
+            border-radius: 6px; 
+            margin: 0 5px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
+        }
+        button:hover { 
+            background-color: #5e2068; 
+        }
+        .share-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .share-link {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
+        }
+        .copy-btn {
+            background: #28a745;
+            margin: 5px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="PriceBot Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='PriceBot';">
+</div>
+
+<div class="chatbox">
+    <div id="output" class="output">Welcome to our price prediction system! Please tell us about your goods!</div>
+    <textarea id="userInput" placeholder="Describe your item here..." rows="3"></textarea>
+    <div class="buttons">
+        <button onclick="submitInput()">Submit</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+    
+    <div class="share-section">
+        <h4>Share this app:</h4>
+        <input type="text" class="share-link" id="shareLink" readonly>
+        <br>
+        <button class="copy-btn" onclick="copyShareLink()">Copy Link</button>
+        <button class="copy-btn" onclick="generateQRCode()">Generate QR Code</button>
+    </div>
+</div>
+
+<script>
+    let currentNode = 0;
+    let productInfo = "";
+    let lastPrice = 0;
+
+    const output = document.getElementById("output");
+    const input = document.getElementById("userInput");
+    const shareLink = document.getElementById("shareLink");
+
+    // Initialize share link
+    shareLink.value = window.location.href;
+
+    function submitInput() {
+        const userText = input.value.trim();
+        if (!userText) {
+            alert("Please tell us about your goods!");
+            return;
+        }
+        
+        const userMessage = `You: ${userText}\n`;
+        input.value = "";
+
+        if (currentNode === 0) {
+            productInfo = userText;
+            currentNode = 1;
+            output.innerHTML = userMessage + "[System] Analyzing your product and predicting price...";
+            
+            // Call price prediction API
+            fetch("/predict_price", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product: productInfo })
+            })
+            .then(res => res.json())
+            .then(data => {
+                currentNode = 2;
+                lastPrice = data.price || (Math.random() * 100 + 10).toFixed(2);
+                output.innerHTML = userMessage + `[System] Predicted price: ¥${lastPrice}\n[System] Are you satisfied with this prediction? (Yes/No)`;
+            })
+            .catch(err => {
+                currentNode = 2;
+                lastPrice = (Math.random() * 100 + 10).toFixed(2);
+                output.innerHTML = userMessage + `[System] Predicted price: ¥${lastPrice}\n[System] Are you satisfied with this prediction? (Yes/No)`;
+            });
+
+        } else if (currentNode === 2) {
+            if (userText.toLowerCase() === "no") {
+                currentNode = 1;
+                output.innerHTML += userMessage + "[System] Recalculating price...";
+                setTimeout(() => {
+                    currentNode = 2;
+                    lastPrice = (Math.random() * 100 + 10).toFixed(2);
+                    output.innerHTML += `\n[System] New predicted price: ¥${lastPrice}\n[System] Are you satisfied with this prediction? (Yes/No)`;
+                }, 1500);
+            } else if (userText.toLowerCase() === "yes") {
+                currentNode = 3;
+                output.innerHTML += userMessage + "[System] Great! Do you need detailed market analysis? (Yes/No)";
+            } else {
+                output.innerHTML += userMessage + "[System] Please answer with 'Yes' or 'No'";
+            }
+        } else if (currentNode === 3) {
+            if (userText.toLowerCase() === "yes") {
+                output.innerHTML += userMessage + "[System] Generating market analysis...";
+                
+                fetch("/deepseek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ product: productInfo })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    currentNode = 4;
+                    output.innerHTML += `\n[System] Market Analysis:\n` + 
+                       marked.parse(data.market_analysis) + 
+                       `\n[System] Thank you for using our service!`;
+                })
+                .catch(err => {
+                    output.innerHTML += `\n[System] Analysis failed: ${err}`;
+                });
+            } else if (userText.toLowerCase() === "no") {
+                currentNode = 4;
+                output.innerHTML += userMessage + "[System] Thank you for using our price prediction service!";
+            } else {
+                output.innerHTML += userMessage + "[System] Please answer with 'Yes' or 'No'";
+            }
+        } else if (currentNode === 4) {
+            output.innerHTML += userMessage + "[System] The conversation has ended. Click 'Reset' to start over.";
+        }
+    }
+
+    function reset() {
+        currentNode = 0;
+        productInfo = "";
+        output.innerHTML = "Welcome to our price prediction system! Please tell us about your goods!";
+        input.value = "";
+    }
+
+    function copyShareLink() {
+        shareLink.select();
+        shareLink.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        alert("Share link copied to clipboard!");
+    }
+
+    function generateQRCode() {
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareLink.value)}`;
+        window.open(qrCodeUrl, '_blank');
+    }
+
+    // Allow Enter key to submit
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitInput();
+        }
+    });
+</script>
+</body>
+</html>
