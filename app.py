@@ -6,7 +6,7 @@ app = Flask(__name__)
 CORS(app)
 
 client = OpenAI(
-    api_key="sk-c506d6dbaa0b493abbab1c1318d32541",
+    api_key=" sk-1953083fe68946ca939bce624319660b",
     base_url="https://api.deepseek.com"
 )
 
