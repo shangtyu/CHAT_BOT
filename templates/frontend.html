@@ -13,34 +13,40 @@
             flex-direction: column; 
             align-items: center; 
             margin: 0;
+            position: relative;
+            min-height: 100vh;
         }
         .logo { 
-            width: 140px; 
-            height: 140px; 
-            background: #491a5b; 
-            color: white; 
-            font-size: 24px; 
-            border-radius: 50%; 
+            width: 1400px; 
+            height: 1400px; 
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            opacity: 0.1;
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            margin-bottom: 20px; 
-            font-weight: bold; 
         }
         .logo img {
-            width: 100px;
-            height: 100px;
+            width: 1000px;
+            height: 1000px;
             border-radius: 50%;
+            object-fit: cover;
         }
         .chatbox { 
             width: 420px; 
-            background: white; 
+            background: rgba(255, 255, 255, 0.95); 
             padding: 20px; 
             border-radius: 12px; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.15); 
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(5px);
         }
         .output { 
-            background: #f1f1f1; 
+            background: rgba(241, 241, 241, 0.9); 
             padding: 15px; 
             min-height: 80px; 
             border-radius: 6px; 
@@ -48,6 +54,7 @@
             line-height: 1.5;
             overflow-y: auto;
             max-height: 300px;
+            backdrop-filter: blur(2px);
         }
         textarea { 
             width: 100%; 
@@ -82,12 +89,13 @@
         .share-section {
             margin-top: 20px;
             padding: 15px;
-            background: #e8f4fd;
+            background: rgba(232, 244, 253, 0.9);
             border-radius: 8px;
             text-align: center;
+            backdrop-filter: blur(3px);
         }
         .share-link {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 8px;
@@ -107,7 +115,7 @@
 <body>
 
 <div class="logo">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="PriceBot Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='PriceBot';">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="PriceBot Logo" onerror="this.style.display='none';">
 </div>
 
 <div class="chatbox">
